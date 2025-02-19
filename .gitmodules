@@ -1,0 +1,3 @@
+[submodule "libft"]
+	path = libft
+	url = git@github.com:tigran-sargsyan-w/Libft_Extended.git
