@@ -13,7 +13,7 @@ SRCS = src/pipex.c \
 	src/find_command.c
 OBJS = $(SRCS:.c=.o)
 
-CC = gcc
+CC = cc
 CFLAGS = -Wall -Wextra -Werror -Iincludes -I$(LIBFT_DIR)
 
 # Флаги линковки (добавляем libft)

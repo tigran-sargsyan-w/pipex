@@ -1,5 +1,4 @@
 #include "pipex.h"
-#include <string.h>
 
 char	*get_from_env(char **envp, char *key)
 {
@@ -10,10 +9,64 @@ char	*get_from_env(char **envp, char *key)
 	key_len = ft_strlen(key);
 	while (envp[i])
 	{
-		if (ft_strncmp(envp[i], key, key_len) == 0)
-			return (envp[i] + key_len);
+		if (ft_strncmp(envp[i], key, key_len) == 0 && envp[i][key_len] == '=')
+			return (envp[i] + key_len + 1);
 		i++;
 	}
+	return (NULL);
+}
+
+void	free_paths(char **paths)
+{
+	int	i;
+
+	i = 0;
+	while (paths[i])
+	{
+		free(paths[i]);
+		i++;
+	}
+	free(paths);
+}
+
+char	*build_command_path(char *dir, char *cmd)
+{
+	char	*full_path;
+	size_t	path_len;
+
+	path_len = ft_strlen(dir) + ft_strlen(cmd) + 2;
+	full_path = malloc(path_len);
+	if (!full_path)
+		return (NULL);
+	ft_strlcpy(full_path, dir, path_len);
+	ft_strlcat(full_path, "/", path_len);
+	ft_strlcat(full_path, cmd, path_len);
+	return (full_path);
+}
+
+char	*search_in_paths(char **paths, char *cmd)
+{
+	char	*full_path;
+	int		i;
+
+	i = 0;
+	while (paths[i])
+	{
+		full_path = build_command_path(paths[i], cmd);
+		if (!full_path)
+		{
+			free_paths(paths);
+			return (NULL);
+		}
+		if (access(full_path, X_OK) == 0)
+		{
+			free_paths(paths);
+			return (full_path);
+		}
+		free(full_path);
+		i++;
+	}
+	free_paths(paths);
 	return (NULL);
 }
 
@@ -21,9 +74,6 @@ char	*find_command(char *cmd, char **envp)
 {
 	char	*path_env;
 	char	**paths;
-	char	*full_path;
-	size_t	path_len;
-	int i;
 
 	if (!cmd || !envp)
 		return (NULL);
@@ -33,30 +83,11 @@ char	*find_command(char *cmd, char **envp)
 			return (ft_strdup(cmd));
 		return (NULL);
 	}
-	path_env = get_from_env(envp, "PATH=");
+	path_env = get_from_env(envp, "PATH");
 	if (!path_env)
 		return (NULL);
 	paths = ft_split(path_env, ':');
 	if (!paths)
 		return (NULL);
-	i = 0;
-	while (paths[i])
-	{
-		path_len = ft_strlen(paths[i]) + ft_strlen(cmd) + 2;
-		full_path = malloc(path_len);
-		if (!full_path)
-			return (NULL);
-		ft_strlcpy(full_path, paths[i], path_len);
-		ft_strlcat(full_path, "/", path_len);
-		ft_strlcat(full_path, cmd, path_len);
-		if (access(full_path, X_OK) == 0)
-		{
-			free(paths);
-			return (full_path);
-		}
-		free(full_path);
-		i++;
-	}
-	free(paths);
-	return (NULL);
+	return (search_in_paths(paths, cmd));
 }
