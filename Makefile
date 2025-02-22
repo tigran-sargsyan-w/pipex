@@ -10,11 +10,13 @@ SRCS = src/pipex.c \
 	src/execute_command.c \
 	src/close_pipes.c \
 	src/errors.c \
-	src/find_command.c
+	src/find_command.c \
+	src/pipex_here_doc.c
 OBJS = $(SRCS:.c=.o)
 
 CC = cc
 CFLAGS = -Wall -Wextra -Werror -Iincludes -I$(LIBFT_DIR)
+LDFLAGS = -Wl,--allow-multiple-definition
 
 # Флаги линковки (добавляем libft)
 LFLAGS = -L$(LIBFT_DIR) -lft
@@ -25,7 +27,7 @@ $(LIBFT):
 	@make -C $(LIBFT_DIR)
 
 $(NAME): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) $(LFLAGS) -o $(NAME)
+	$(CC) $(CFLAGS) $(OBJS) $(LFLAGS) -o $(NAME) $(LDFLAGS)
 
 %.o: %.c
 	@$(CC) $(CFLAGS) -c $< -o $@
