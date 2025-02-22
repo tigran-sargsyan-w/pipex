@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   pipex.h                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: tsargsya <tsargsya@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/02/22 13:46:58 by tsargsya          #+#    #+#             */
+/*   Updated: 2025/02/22 13:46:59 by tsargsya         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #ifndef PIPEX_H
 # define PIPEX_H
 
@@ -11,24 +23,25 @@
 
 typedef struct s_pipe
 {
-	int read;  // Чтение
-	int write; // Запись
-}		t_pipe;
+	int		read;
+	int		write;
+}			t_pipe;
 
 typedef struct s_pipex
 {
-	int cmd_count; // Количество команд
-	t_pipe *pipes; // Массив структур пайпов
-	int infile;    // Входной файл
-	int outfile;   // Выходной файл
-}		t_pipex;
+	int		cmd_count;
+	t_pipe	*pipes;
+	int		infile;
+	int		outfile;
+}			t_pipex;
 
-// Основные функции
-void	init_pipex(t_pipex *pipex, int argc, char **argv);
-void	close_pipes(t_pipex *pipex, int cmd_index);
-void	execute_pipeline(t_pipex *pipex, char **argv, char **envp);
-void	execute_command(char *cmd, t_pipex *pipex, int cmd_index, char **envp);
-void	error_exit(char *msg);
-char	*find_command(char *cmd, char **envp);
+// main functions
+void		init_pipex(t_pipex *pipex, int argc, char **argv);
+void		close_pipes(t_pipex *pipex, int cmd_index);
+void		execute_pipeline(t_pipex *pipex, char **argv, char **envp);
+void		execute_command(char *cmd, t_pipex *pipex, int cmd_index,
+				char **envp);
+void		error_exit(char *msg);
+char		*find_command(char *cmd, char **envp);
 
 #endif
