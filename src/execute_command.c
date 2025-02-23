@@ -6,7 +6,7 @@
 /*   By: tsargsya <tsargsya@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/22 13:47:28 by tsargsya          #+#    #+#             */
-/*   Updated: 2025/02/22 13:47:29 by tsargsya         ###   ########.fr       */
+/*   Updated: 2025/02/23 13:01:31 by tsargsya         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,6 +38,10 @@ void	execute_command(char *cmd, t_pipex *pipex, int cmd_index, char **envp)
 
 	setup_redirections(pipex, cmd_index);
 	close_pipes(pipex, cmd_index);
+	if (pipex->infile != -1)
+		close(pipex->infile);
+	if (pipex->outfile != -1)
+		close(pipex->outfile);
 	args = ft_split(cmd, ' ');
 	cmd_path = find_command(args[0], envp);
 	if (!cmd_path)

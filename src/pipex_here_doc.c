@@ -6,7 +6,7 @@
 /*   By: tsargsya <tsargsya@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/22 19:34:53 by tsargsya          #+#    #+#             */
-/*   Updated: 2025/02/22 19:46:42 by tsargsya         ###   ########.fr       */
+/*   Updated: 2025/02/23 13:03:24 by tsargsya         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,6 +68,8 @@ int	pipex_here_doc(t_pipex *pipex, int argc, char **argv, char **envp)
 	prepare_here_doc(temp_file, &argc, argv);
 	init_pipex(pipex, argc, argv);
 	execute_pipeline(pipex, argv, envp);
+	if (pipex->outfile != -1)
+		close(pipex->outfile);
 	unlink(temp_file);
 	return (0);
 }

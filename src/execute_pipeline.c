@@ -6,7 +6,7 @@
 /*   By: tsargsya <tsargsya@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/22 13:47:34 by tsargsya          #+#    #+#             */
-/*   Updated: 2025/02/22 13:47:35 by tsargsya         ###   ########.fr       */
+/*   Updated: 2025/02/23 13:01:03 by tsargsya         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,6 +28,10 @@ void	execute_pipeline(t_pipex *pipex, char **argv, char **envp)
 		i++;
 	}
 	close_pipes(pipex, -1);
+	if (pipex->infile != -1)
+		close(pipex->infile);
+	if (pipex->outfile != -1)
+		close(pipex->outfile);
 	i = 0;
 	while (i < pipex->cmd_count)
 	{
