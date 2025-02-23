@@ -28,34 +28,33 @@ run_test() {
     local outfile="$4"
     local use_valgrind="$5"
 
-    # 🛠 Гарантируем, что infile существует
+    # 🛠 Generate default infile if it doesn't exist
     if [ ! -f "$infile" ]; then
-        # echo "Creating default $infile..."
         printf "Hello\nWorld\nPipex\nTest\n" > "$infile"
     fi
 
-    # 📝 Записываем ожидаемый результат (как это сделал бы Shell)
+    # 📝 Write expected output (as Shell would do)
     rm -f expected_output.txt
     < "$infile" $cmd1 | $cmd2 > expected_output.txt 2>/dev/null
 
     rm -f "$outfile"
 
-    # 📌 Формируем команду для Pipex: с Valgrind или без
+    # 📌 Form the command for Pipex: with Valgrind or without
     local exec_cmd="$PIPEX_BIN"
     [ "$use_valgrind" == "valgrind" ] && exec_cmd="valgrind --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all --error-exitcode=42 $PIPEX_BIN"
 
-    # 🚀 Запускаем Pipex
+    # 🚀 Run pipex with or without Valgrind
     $exec_cmd "$infile" "$cmd1" "$cmd2" "$outfile" 2>/dev/null
     local status=$?
 
-    # 📌 Проверяем, создался ли `outfile`
+    # 📌 Check if `outfile` was created
     if [ ! -f "$outfile" ]; then
         echo "❌ FAIL: Pipex did NOT create $outfile for <$infile $cmd1 | $cmd2>"
         errors=$((errors + 1))
         return
     fi
 
-    # 📌 Проверяем `Valgrind` или `diff`
+    # 📌 Check `Valgrind` or `diff`
     if [ "$use_valgrind" == "valgrind" ]; then
         if [ "$status" -eq 42 ]; then
             echo "❌ FAIL (Valgrind): <$infile $cmd1 | $cmd2>"
@@ -64,7 +63,7 @@ run_test() {
             echo "✅ OK (Valgrind): <$infile $cmd1 | $cmd2>"
         fi
     else
-        # 🚀 Нормализуем `\n`, чтобы `diff` работал корректно
+        # 🚀 Normalize `\n` to make `diff` work correctly
         sed -i -e '$a\' expected_output.txt
         sed -i -e '$a\' "$outfile"
 
@@ -90,7 +89,7 @@ run_multi_test() {
     local outfile="$5"
     local use_valgrind=""
 
-    # Если последний аргумент "valgrind", то включаем Valgrind
+    # Check if the last argument is "valgrind", then enable Valgrind
     if [ "$outfile" == "valgrind" ]; then
         use_valgrind="valgrind"
         outfile="$5"
@@ -100,34 +99,33 @@ run_multi_test() {
         infile="$1"
     fi
 
-    # 🛠 Гарантируем, что `infile` существует
+    # 🛠 Generate default infile if it doesn't exist
     if [ ! -f "$infile" ]; then
-        # echo "Creating default $infile..."
         printf "Hello\nWorld\nPipex\nTest\ntest1\ntest2\n" > "$infile"
     fi
 
-    # 📝 Генерируем `expected_output.txt` через Shell
+    # 📝 Generate `expected_output.txt` via Shell
     rm -f expected_output.txt
     eval "< \"$infile\" $cmd1 | $cmd2 | $cmd3 > expected_output.txt 2>/dev/null"
 
     rm -f "$outfile"
 
-    # 📌 Формируем команду для Pipex: с Valgrind или без
+    # 📌 Form the command for Pipex: with Valgrind or without
     local exec_cmd="$PIPEX_BIN"
     [ "$use_valgrind" == "valgrind" ] && exec_cmd="valgrind --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all --error-exitcode=42 $PIPEX_BIN"
 
-    # 🚀 Запускаем Pipex
+    # 🚀 Run pipex with or without Valgrind
     eval "$exec_cmd \"$infile\" \"$cmd1\" \"$cmd2\" \"$cmd3\" \"$outfile\"" 2>/dev/null
     local status=$?
 
-    # 📌 Проверяем, создался ли `outfile`
+    # 📌 Check if `outfile` was created
     if [ ! -f "$outfile" ]; then
         echo "❌ FAIL: Pipex did NOT create $outfile for <$infile $cmd1 | $cmd2 | $cmd3>"
         errors=$((errors + 1))
         return
     fi
 
-    # 📌 Проверяем `Valgrind` или `diff`
+    # 📌 Check `Valgrind` or `diff`
     if [ "$use_valgrind" == "valgrind" ]; then
         if [ "$status" -eq 42 ]; then
             echo "❌ FAIL (Valgrind - multi_cmd): <$infile $cmd1 | $cmd2 | $cmd3>"
@@ -136,7 +134,7 @@ run_multi_test() {
             echo "✅ OK (Valgrind - multi_cmd): <$infile $cmd1 | $cmd2 | $cmd3>"
         fi
     else
-        # 🚀 Нормализуем `\n`, чтобы `diff` работал корректно
+        # 🚀 Normalize `\n` to make `diff` work correctly
         sed -i -e '$a\' expected_output.txt
         sed -i -e '$a\' "$outfile"
 
@@ -161,28 +159,28 @@ run_here_doc_test() {
     local outfile="$4"
     local use_valgrind="$5"
 
-    # 🛠 Гарантируем, что `expected_hd.txt` имеет точную структуру `here_doc`
+    # 🛠 Generate expected_hd.txt with here_doc structure
     printf "hello\naaa\nbbb\n" > expected_hd.txt
     cat expected_hd.txt | $cmd1 | $cmd2 > expected_output.txt 2>/dev/null
 
     rm -f "$outfile"
 
-    # 📌 Формируем команду с Valgrind или без
+    # 📌 Form the command for Pipex: with Valgrind or without
     local exec_cmd="$PIPEX_BIN"
     [ "$use_valgrind" == "valgrind" ] && exec_cmd="valgrind --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all --error-exitcode=42 $PIPEX_BIN"
 
-    # 🔥 Используем `printf`, чтобы точно передать `here_doc` в pipex
+    # 🔥 Use `printf` to pass `here_doc` to pipex
     printf "hello\naaa\nbbb\n%s\n" "$limiter" | $exec_cmd here_doc "$limiter" "$cmd1" "$cmd2" "$outfile" 2>/dev/null
     local status=$?
 
-    # 📌 Проверяем, создался ли `outfile`
+    # 📌 Check if `outfile` was created
     if [ ! -f "$outfile" ]; then
         echo "❌ FAIL (here_doc): outfile was NOT created (limiter=\"$limiter\", cmds=\"$cmd1 $cmd2\")"
         errors=$((errors + 1))
         return
     fi
 
-    # 📌 Проверяем `Valgrind` или `diff`
+    # 📌 Check `Valgrind` or `diff`
     if [ "$use_valgrind" == "valgrind" ]; then
         if [ "$status" -eq 42 ]; then
             echo "❌ FAIL (Valgrind - here_doc): LIMITER=\"$limiter\""
@@ -191,7 +189,7 @@ run_here_doc_test() {
             echo "✅ OK (Valgrind - here_doc): LIMITER=\"$limiter\""
         fi
     else
-        # 🚀 Дополнительно нормализуем `\n`, чтобы `diff` работал корректно
+        # 🚀 Normalize `\n` to make `diff` work correctly
         sed -i -e '$a\' expected_output.txt
         sed -i -e '$a\' "$outfile"
 
@@ -216,33 +214,32 @@ run_badcmd_test() {
     local outfile="$4"
     local use_valgrind="$5"
 
-    # 🛠 Гарантируем, что infile существует
+    # 🛠 Generate default infile if it doesn't exist
     if [ ! -f "$infile" ]; then
-        # echo "Creating default $infile..."
         printf "Some input data\n" > "$infile"
     fi
 
-    # 📝 Подготавливаем ожидаемый результат (Shell)
+    # 📝 Prepare the expected result (Shell)
     rm -f expected_output.txt
     ( < "$infile" $badcmd | $cmd2 ) > expected_output.txt 2> bad_error.txt
 
     rm -f "$outfile"
 
-    # 📌 Формируем команду для Pipex: с Valgrind или без
+    # 📌 Form the command for Pipex: with Valgrind or without
     local exec_cmd="$PIPEX_BIN"
     [ "$use_valgrind" == "valgrind" ] && exec_cmd="valgrind --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all --error-exitcode=42 $PIPEX_BIN"
 
-    # 🚀 Запускаем Pipex
+    # 🚀 Run pipex with or without Valgrind
     $exec_cmd "$infile" "$badcmd" "$cmd2" "$outfile" 2>/dev/null
     local status=$?
 
-    # 📌 Проверяем, создался ли `outfile`
+    # 📌 Check if `outfile` was created
     if [ ! -f "$outfile" ]; then
         echo "✅ OK (badcmd): outfile NOT created for <$infile $badcmd | $cmd2>"
         return
     fi
 
-    # 📌 Проверяем `Valgrind` или `diff`
+    # 📌 Check `Valgrind` or `diff`
     if [ "$use_valgrind" == "valgrind" ]; then
         if [ "$status" -eq 42 ]; then
             echo "❌ FAIL (Valgrind): <$infile $badcmd | $cmd2>"
@@ -251,7 +248,7 @@ run_badcmd_test() {
             echo "✅ OK (Valgrind): <$infile $badcmd | $cmd2>"
         fi
     else
-        # 🚀 Нормализуем `\n`, чтобы `diff` работал корректно
+        # 🚀 Normalize `\n` to make `diff` work correctly
         sed -i -e '$a\' expected_output.txt
         sed -i -e '$a\' "$outfile"
 
