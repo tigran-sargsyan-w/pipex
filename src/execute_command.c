@@ -6,7 +6,7 @@
 /*   By: tsargsya <tsargsya@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/22 13:47:28 by tsargsya          #+#    #+#             */
-/*   Updated: 2025/02/23 13:01:31 by tsargsya         ###   ########.fr       */
+/*   Updated: 2025/02/23 14:39:29 by tsargsya         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,9 @@ void	execute_command(char *cmd, t_pipex *pipex, int cmd_index, char **envp)
 	cmd_path = find_command(args[0], envp);
 	if (!cmd_path)
 	{
-		ft_printf("Command not found: %s\n", args[0]);
+		write(STDERR_FILENO, "Command not found: ", 19);
+		write(STDERR_FILENO, args[0], ft_strlen(args[0]));
+		write(STDERR_FILENO, "\n", 1);
 		exit(127);
 	}
 	execve(cmd_path, args, envp);
