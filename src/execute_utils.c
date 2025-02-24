@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   execute_command.c                                  :+:      :+:    :+:   */
+/*   execute_utils.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: tsargsya <tsargsya@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/22 13:47:28 by tsargsya          #+#    #+#             */
-/*   Updated: 2025/02/24 18:00:58 by tsargsya         ###   ########.fr       */
+/*   Updated: 2025/02/24 22:31:35 by tsargsya         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -68,11 +68,11 @@ void	execute_command(char *cmd, t_pipex *pipex, int cmd_index, char **envp)
 		free_array(args);
 		if (pipex->pipes)
 			free(pipex->pipes);
-		exit(127);
+		exit(CMD_NOT_FOUND);
 	}
 	execve(cmd_path, args, envp);
 	perror("Execve error");
-	exit(1);
+	exit(EXIT_FAILURE);
 }
 
 void	execute_pipeline(t_pipex *pipex, char **argv, char **envp)

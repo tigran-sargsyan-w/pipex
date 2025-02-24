@@ -6,12 +6,14 @@
 /*   By: tsargsya <tsargsya@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/22 13:46:58 by tsargsya          #+#    #+#             */
-/*   Updated: 2025/02/24 22:03:18 by tsargsya         ###   ########.fr       */
+/*   Updated: 2025/02/24 22:35:50 by tsargsya         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef PIPEX_H
 # define PIPEX_H
+
+# define CMD_NOT_FOUND 127
 
 # include "ft_printf.h"
 # include "libft.h"
@@ -44,5 +46,6 @@ void		execute_command(char *cmd, t_pipex *pipex, int cmd_index,
 void		error_exit(char *msg);
 char		*find_command(char *cmd, char **envp);
 int			pipex_here_doc(t_pipex *pipex, int argc, char **argv, char **envp);
+void		free_array(char **array);
 
 #endif

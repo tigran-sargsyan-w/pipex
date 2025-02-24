@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   find_command.c                                     :+:      :+:    :+:   */
+/*   find_cmd_utils.c                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: tsargsya <tsargsya@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/22 13:47:37 by tsargsya          #+#    #+#             */
-/*   Updated: 2025/02/22 13:47:38 by tsargsya         ###   ########.fr       */
+/*   Updated: 2025/02/24 22:29:34 by tsargsya         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,19 +26,6 @@ char	*get_from_env(char **envp, char *key)
 		i++;
 	}
 	return (NULL);
-}
-
-void	free_paths(char **paths)
-{
-	int	i;
-
-	i = 0;
-	while (paths[i])
-	{
-		free(paths[i]);
-		i++;
-	}
-	free(paths);
 }
 
 char	*build_command_path(char *dir, char *cmd)
@@ -67,18 +54,18 @@ char	*search_in_paths(char **paths, char *cmd)
 		full_path = build_command_path(paths[i], cmd);
 		if (!full_path)
 		{
-			free_paths(paths);
+			free_array(paths);
 			return (NULL);
 		}
 		if (access(full_path, X_OK) == 0)
 		{
-			free_paths(paths);
+			free_array(paths);
 			return (full_path);
 		}
 		free(full_path);
 		i++;
 	}
-	free_paths(paths);
+	free_array(paths);
 	return (NULL);
 }
 
