@@ -265,23 +265,49 @@ run_badcmd_test() {
     fi
 }
 
+check_fds() {
+    valgrind --track-fds=yes --trace-children=yes -s \
+        "$PIPEX_BIN" "$@" > /dev/null 2> valgrind_log.txt
+
+    local leak_lines
+    leak_lines=$(grep -A 10 "Open file descriptor" valgrind_log.txt | \
+        grep -v "<inherited from parent>" | \
+        grep -v "vscode" | \
+        grep -v -E "(HEAP SUMMARY|LEAK SUMMARY|ERROR SUMMARY|All heap|suppressed:|in use at exit|total heap usage:|^--$|lost:|bytes in )" | \
+        sed '/^==[0-9]\+== *$/d' | \
+        sed '/^==[0-9]\+== Open file descriptor [0-9]\+:$/d')
+
+    if [ -n "$leak_lines" ]; then
+        echo "❌ FAIL: Find unclosed file descriptors!"
+        echo "$leak_lines"
+        errors=$((errors + 1))
+    else
+        echo "✅ OK: All file descriptors are closed or inherited from parent"
+    fi
+}
+
 # All tests
+echo ""
 echo "🚀 [Phase 1] Testing two-command ..."
 echo ""
 echo -e "Hello\nWorld\nPipex\nTest\ntest1\ntest2" > infile1.txt
 run_test "infile1.txt" "cat" "wc -l" "outfile1.txt"
+check_fds "infile1.txt" "cat" "wc -l" "outfile1.txt"
 run_test "infile1.txt" "cat" "wc -l" "outfile1.txt" "valgrind"
 echo -e "apple\nbanana\napple\ncherry\norange" > infile2.txt
 run_test "infile2.txt" "grep apple" "wc -w" "outfile2.txt"
+check_fds "infile2.txt" "grep apple" "wc -w" "outfile2.txt"
 run_test "infile2.txt" "grep apple" "wc -w" "outfile2.txt" "valgrind"
 echo -e "some content for ls\n" > infile3.txt
 run_test "infile3.txt" "ls" "grep pipex" "outfile3.txt"
+check_fds "infile3.txt" "ls" "grep pipex" "outfile3.txt"
 run_test "infile3.txt" "ls" "grep pipex" "outfile3.txt" "valgrind"
 
 echo ""
 echo "🚀 [Phase 2] Testing multiple-command..."
 echo ""
 run_multi_test "infile.txt" "cat" "grep test" "uniq" "wc -l" "multi_out.txt"
+check_fds "infile.txt" "cat" "grep test" "uniq" "wc -l" "multi_out.txt"
 run_multi_test "infile.txt" "cat" "grep test" "uniq" "wc -l" "multi_out.txt" "valgrind"
 
 echo ""
@@ -289,18 +315,21 @@ echo "🚀 [Phase 3] Testing empty infile..."
 echo ""
 touch empty_infile.txt
 run_test "empty_infile.txt" "cat" "wc -l" "empty_out.txt"
+check_fds "empty_infile.txt" "cat" "wc -l" "empty_out.txt"
 run_test "empty_infile.txt" "cat" "wc -l" "empty_out.txt" "valgrind"
 
 echo ""
 echo "🚀 [Phase 4] Testing here_doc..."
 echo ""
 run_here_doc_test "END" "cat" "wc -l" "outfile_hd.txt"
+# check_fds "here_doc" "END" "cat" "wc -l" "outfile_hd.txt"
 run_here_doc_test "END" "cat" "wc -l" "outfile_hd.txt" "valgrind"
 
 echo ""
 echo "🚀 [Phase 5] Testing nonexistent command..."
 echo ""
 run_badcmd_test "infile_bad.txt" "blahblah_123" "wc -l" "out_bad.txt"
+check_fds "infile_bad.txt" "blahblah_123" "wc -l" "out_bad.txt"
 run_badcmd_test "infile_bad.txt" "blahblah_123" "wc -l" "out_bad.txt" "valgrind"
 
 echo ""
