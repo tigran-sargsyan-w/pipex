@@ -20,6 +20,7 @@ TEST_DIR="pipex_test_dir"
 mkdir -p "$TEST_DIR"
 cd "$TEST_DIR"
 
+# Function to check Valgrind memory leaks
 check_valgrind_leaks() {
     local log_file="$1"
 
@@ -50,37 +51,57 @@ run_test() {
         printf "Hello\nWorld\nPipex\nTest\n" > "$infile"
     fi
 
-    # 📝 Write expected output (as Shell would do)
+    # Form expected_output.txt through Shell
     rm -f expected_output.txt
     < "$infile" $cmd1 | $cmd2 > expected_output.txt 2>/dev/null
 
     rm -f "$outfile"
 
-    # 📌 Form the command for Pipex: with Valgrind or without
+    # Form the command to run (with or without Valgrind)
     local exec_cmd="$PIPEX_BIN"
-    [ "$use_valgrind" == "valgrind" ] && exec_cmd="valgrind --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all --error-exitcode=42 $PIPEX_BIN"
+    if [ "$use_valgrind" = "valgrind" ]; then
+        exec_cmd="valgrind --leak-check=full --show-leak-kinds=all \
+                  --errors-for-leak-kinds=all --error-exitcode=42 \
+                  $PIPEX_BIN"
+    fi
 
-    # 🚀 Run pipex with or without Valgrind
-    $exec_cmd "$infile" "$cmd1" "$cmd2" "$outfile" 2>/dev/null
-    local status=$?
+    # Run pipex (with Valgrind or without), write stderr to valgrind_log.txt
+    $exec_cmd "$infile" "$cmd1" "$cmd2" "$outfile" 2> valgrind_log.txt
+    local cmd_status=$?
 
-    # 📌 Check if `outfile` was created
+    # Check if the outfile was created
     if [ ! -f "$outfile" ]; then
         echo "❌ FAIL: Pipex did NOT create $outfile for <$infile $cmd1 | $cmd2>"
         errors=$((errors + 1))
         return
     fi
 
-    # 📌 Check `Valgrind` or `diff`
-    if [ "$use_valgrind" == "valgrind" ]; then
-        if [ "$status" -eq 42 ]; then
-            echo "❌ FAIL (Valgrind): <$infile $cmd1 | $cmd2>"
+    # If Valgrind is used, analyze logs and check the return code
+    if [ "$use_valgrind" = "valgrind" ]; then
+        local still=0 def=0 ind=0 pos=0
+        read still def ind pos < <(check_valgrind_leaks valgrind_log.txt)
+
+        if [ "$cmd_status" -eq 42 ]; then
+            echo "❌ FAIL (Valgrind exit code): <$infile $cmd1 | $cmd2>"
             errors=$((errors + 1))
         else
-            echo "✅ OK (Valgrind): <$infile $cmd1 | $cmd2>"
+            echo "✅ OK (Valgrind exit code): <$infile $cmd1 | $cmd2>"
         fi
+
+        if (( def > 0 || ind > 0 || pos > 0 || still > 0 )); then
+            echo "❌ FAIL (Valgrind memory check): <$infile $cmd1 | $cmd2>"
+            echo "Valgrind summary:"
+            echo "  definitely lost: $def bytes"
+            echo "  indirectly lost: $ind bytes"
+            echo "  possibly lost:   $pos bytes"
+            echo "  still reachable: $still bytes"
+            errors=$((errors + 1))
+        else
+            echo "✅ OK (Valgrind memory check): no memory issues"
+        fi
+
     else
-        # 🚀 Normalize `\n` to make `diff` work correctly
+        # If Valgrind is not used, just do a regular diff
         sed -i -e '$a\' expected_output.txt
         sed -i -e '$a\' "$outfile"
 
@@ -104,9 +125,9 @@ run_multi_test() {
     local cmd2="$3"
     local cmd3="$4"
     local outfile="$5"
-    local use_valgrind=""
+    local use_valgrind="$6"
 
-    # Check if the last argument is "valgrind", then enable Valgrind
+    # If the last argument is "valgrind", switch to it
     if [ "$outfile" == "valgrind" ]; then
         use_valgrind="valgrind"
         outfile="$5"
@@ -116,42 +137,58 @@ run_multi_test() {
         infile="$1"
     fi
 
-    # 🛠 Generate default infile if it doesn't exist
+    # Generate default infile if it doesn't exist
     if [ ! -f "$infile" ]; then
         printf "Hello\nWorld\nPipex\nTest\ntest1\ntest2\n" > "$infile"
     fi
 
-    # 📝 Generate `expected_output.txt` via Shell
+    # Create expected_output.txt through Shell
     rm -f expected_output.txt
     eval "< \"$infile\" $cmd1 | $cmd2 | $cmd3 > expected_output.txt 2>/dev/null"
 
     rm -f "$outfile"
 
-    # 📌 Form the command for Pipex: with Valgrind or without
+    # Form the command to run (with or without Valgrind)
     local exec_cmd="$PIPEX_BIN"
-    [ "$use_valgrind" == "valgrind" ] && exec_cmd="valgrind --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all --error-exitcode=42 $PIPEX_BIN"
+    if [ "$use_valgrind" == "valgrind" ]; then
+        exec_cmd="valgrind --leak-check=full --show-leak-kinds=all \
+                  --errors-for-leak-kinds=all --error-exitcode=42 \
+                  $PIPEX_BIN"
+    fi
 
-    # 🚀 Run pipex with or without Valgrind
-    eval "$exec_cmd \"$infile\" \"$cmd1\" \"$cmd2\" \"$cmd3\" \"$outfile\"" 2>/dev/null
-    local status=$?
+    # Run pipex (with Valgrind or without), write stderr to valgrind_log.txt
+    eval "$exec_cmd \"$infile\" \"$cmd1\" \"$cmd2\" \"$cmd3\" \"$outfile\"" 2> valgrind_log.txt
+    local cmd_status=$?
 
-    # 📌 Check if `outfile` was created
+    # Check if the outfile was created
     if [ ! -f "$outfile" ]; then
         echo "❌ FAIL: Pipex did NOT create $outfile for <$infile $cmd1 | $cmd2 | $cmd3>"
         errors=$((errors + 1))
         return
     fi
 
-    # 📌 Check `Valgrind` or `diff`
+    # If Valgrind is used, analyze logs and check the return code
     if [ "$use_valgrind" == "valgrind" ]; then
-        if [ "$status" -eq 42 ]; then
+        local still def ind pos
+        read still def ind pos < <(check_valgrind_leaks valgrind_log.txt)
+
+        if [ "$cmd_status" -eq 42 ]; then
             echo "❌ FAIL (Valgrind - multi_cmd): <$infile $cmd1 | $cmd2 | $cmd3>"
             errors=$((errors + 1))
         else
             echo "✅ OK (Valgrind - multi_cmd): <$infile $cmd1 | $cmd2 | $cmd3>"
         fi
+
+        if (( def > 0 || ind > 0 || pos > 0 || still > 0 )); then
+            echo "❌ FAIL (Valgrind memory check - multi_cmd): <$infile $cmd1 | $cmd2 | $cmd3>"
+            echo "Valgrind summary:"
+            echo "  definitely lost: $def bytes"
+            echo "  indirectly lost: $ind bytes"
+            echo "  possibly lost:   $pos bytes"
+            echo "  still reachable: $still bytes"
+            errors=$((errors + 1))
+        fi
     else
-        # 🚀 Normalize `\n` to make `diff` work correctly
         sed -i -e '$a\' expected_output.txt
         sed -i -e '$a\' "$outfile"
 
@@ -176,37 +213,57 @@ run_here_doc_test() {
     local outfile="$4"
     local use_valgrind="$5"
 
-    # 🛠 Generate expected_hd.txt with here_doc structure
+    # Generate expected_output.txt through Shell
     printf "hello\naaa\nbbb\n" > expected_hd.txt
     cat expected_hd.txt | $cmd1 | $cmd2 > expected_output.txt 2>/dev/null
 
     rm -f "$outfile"
 
-    # 📌 Form the command for Pipex: with Valgrind or without
-    local exec_cmd="$PIPEX_BIN"
-    [ "$use_valgrind" == "valgrind" ] && exec_cmd="valgrind --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all --error-exitcode=42 $PIPEX_BIN"
+    # Run pipex (with Valgrind or without), write stderr to valgrind_log.txt
+    local cmd_status=0
+    if [ "$use_valgrind" == "valgrind" ]; then
+        printf "hello\naaa\nbbb\n%s\n" "$limiter" \
+        | valgrind --leak-check=full --show-leak-kinds=all \
+                   --errors-for-leak-kinds=all --error-exitcode=42 -s \
+                   "$PIPEX_BIN" here_doc "$limiter" "$cmd1" "$cmd2" "$outfile" \
+                   2> valgrind_log.txt
+        cmd_status=$?
 
-    # 🔥 Use `printf` to pass `here_doc` to pipex
-    printf "hello\naaa\nbbb\n%s\n" "$limiter" | $exec_cmd here_doc "$limiter" "$cmd1" "$cmd2" "$outfile" 2>/dev/null
-    local status=$?
+        read still def ind pos < <(check_valgrind_leaks valgrind_log.txt)
+    else
+        printf "hello\naaa\nbbb\n%s\n" "$limiter" \
+        | "$PIPEX_BIN" here_doc "$limiter" "$cmd1" "$cmd2" "$outfile" 2>/dev/null
+        cmd_status=$?
+    fi
 
-    # 📌 Check if `outfile` was created
+    # Check if the outfile was created
     if [ ! -f "$outfile" ]; then
         echo "❌ FAIL (here_doc): outfile was NOT created (limiter=\"$limiter\", cmds=\"$cmd1 $cmd2\")"
         errors=$((errors + 1))
         return
     fi
 
-    # 📌 Check `Valgrind` or `diff`
+    # If Valgrind is used, analyze logs and check the return code
     if [ "$use_valgrind" == "valgrind" ]; then
-        if [ "$status" -eq 42 ]; then
-            echo "❌ FAIL (Valgrind - here_doc): LIMITER=\"$limiter\""
+        if [ "$cmd_status" -eq 42 ]; then
+            echo "❌ FAIL (Valgrind - here_doc): LIMITER=\"$limiter\" (error-exitcode=42)"
             errors=$((errors + 1))
         else
-            echo "✅ OK (Valgrind - here_doc): LIMITER=\"$limiter\""
+            if (( def > 0 || ind > 0 || pos > 0 || still > 0 )); then
+                echo "❌ FAIL (Valgrind - memory issues): LIMITER=\"$limiter\""
+                echo "Valgrind summary:"
+                echo "  definitely lost: $def bytes"
+                echo "  indirectly lost: $ind bytes"
+                echo "  possibly lost:   $pos bytes"
+                echo "  still reachable: $still bytes"
+                errors=$((errors + 1))
+            else
+                echo "✅ OK (Valgrind - here_doc): LIMITER=\"$limiter\""
+            fi
         fi
+
     else
-        # 🚀 Normalize `\n` to make `diff` work correctly
+        # If Valgrind is not used, just do a regular diff
         sed -i -e '$a\' expected_output.txt
         sed -i -e '$a\' "$outfile"
 
@@ -231,18 +288,18 @@ run_badcmd_test() {
     local outfile="$4"
     local use_valgrind="$5"
 
-    # 🛠 Если infile не существует — создаём
+    # Generate default infile if it doesn't exist
     if [ ! -f "$infile" ]; then
         printf "Some input data\n" > "$infile"
     fi
 
-    # 📝 Готовим ожидаемый вывод через Shell
+    # Create expected_output.txt through Shell
     rm -f expected_output.txt
     ( < "$infile" $badcmd | $cmd2 ) > expected_output.txt 2> bad_error.txt
 
     rm -f "$outfile"
 
-    # 📌 Если нужно Valgrind, составляем команду
+    # If Valgrind is needed, form the command
     local exec_cmd="$PIPEX_BIN"
     if [ "$use_valgrind" = "valgrind" ]; then
         exec_cmd="valgrind --leak-check=full --show-leak-kinds=all \
@@ -250,21 +307,19 @@ run_badcmd_test() {
                   $PIPEX_BIN"
     fi
 
-    # 🚀 Запускаем pipex (под valgrind или нет), stderr => valgrind_log.txt
+    # Run pipex (with Valgrind or without), write stderr to valgrind_log.txt
     $exec_cmd "$infile" "$badcmd" "$cmd2" "$outfile" 2> valgrind_log.txt
     local cmd_status=$?
 
-    # Если мы в режиме Valgrind, парсим лог и получаем 4 числа:
     local still=0 def=0 ind=0 pos=0
     if [ "$use_valgrind" = "valgrind" ]; then
         read still def ind pos < <(check_valgrind_leaks valgrind_log.txt)
     fi
 
-    # 📌 Проверяем, создался ли outfile
+    # Check if the outfile was created
     if [ ! -f "$outfile" ]; then
         echo "✅ OK (badcmd): outfile NOT created for <$infile $badcmd | $cmd2>"
     else
-        # Сравниваем с ожидаемым выводом
         sed -i -e '$a\' expected_output.txt
         sed -i -e '$a\' "$outfile"
         if diff expected_output.txt "$outfile" >/dev/null 2>&1; then
@@ -275,9 +330,8 @@ run_badcmd_test() {
         fi
     fi
 
-    # Если запущено под Valgrind — проверяем код возврата + утечки
+    # If Valgrind is used, check the return code and memory leaks
     if [ "$use_valgrind" = "valgrind" ]; then
-        # Проверка кода возврата (42 при ошибках Valgrind)
         if [ "$cmd_status" -eq 42 ]; then
             echo "❌ FAIL (Valgrind exit code): <$infile $badcmd | $cmd2>"
             errors=$((errors + 1))
@@ -285,7 +339,6 @@ run_badcmd_test() {
             echo "✅ OK (Valgrind exit code): <$infile $badcmd | $cmd2>"
         fi
 
-        # Проверка утечек (если хоть один вид > 0 — считаем ошибкой)
         if (( def > 0 || ind > 0 || pos > 0 || still > 0 )); then
             echo "❌ FAIL (Valgrind memory check): <$infile $badcmd | $cmd2>"
             echo "Valgrind summary:"
@@ -300,7 +353,8 @@ run_badcmd_test() {
     fi
 }
 
-check_fds() {
+# Function to check file descriptors
+run_check_fds_test() {
     valgrind --track-fds=yes --trace-children=yes -s \
         "$PIPEX_BIN" "$@" > /dev/null 2> valgrind_log.txt
 
@@ -327,44 +381,44 @@ echo "🚀 [Phase 1] Testing two-command ..."
 echo ""
 echo -e "Hello\nWorld\nPipex\nTest\ntest1\ntest2" > infile1.txt
 run_test "infile1.txt" "cat" "wc -l" "outfile1.txt"
-check_fds "infile1.txt" "cat" "wc -l" "outfile1.txt"
+run_check_fds_test "infile1.txt" "cat" "wc -l" "outfile1.txt"
 run_test "infile1.txt" "cat" "wc -l" "outfile1.txt" "valgrind"
 echo -e "apple\nbanana\napple\ncherry\norange" > infile2.txt
 run_test "infile2.txt" "grep apple" "wc -w" "outfile2.txt"
-check_fds "infile2.txt" "grep apple" "wc -w" "outfile2.txt"
+run_check_fds_test "infile2.txt" "grep apple" "wc -w" "outfile2.txt"
 run_test "infile2.txt" "grep apple" "wc -w" "outfile2.txt" "valgrind"
 echo -e "some content for ls\n" > infile3.txt
 run_test "infile3.txt" "ls" "grep pipex" "outfile3.txt"
-check_fds "infile3.txt" "ls" "grep pipex" "outfile3.txt"
+run_check_fds_test "infile3.txt" "ls" "grep pipex" "outfile3.txt"
 run_test "infile3.txt" "ls" "grep pipex" "outfile3.txt" "valgrind"
 
 echo ""
 echo "🚀 [Phase 2] Testing multiple-command..."
 echo ""
-run_multi_test "infile.txt" "cat" "grep test" "uniq" "wc -l" "multi_out.txt"
-check_fds "infile.txt" "cat" "grep test" "uniq" "wc -l" "multi_out.txt"
-run_multi_test "infile.txt" "cat" "grep test" "uniq" "wc -l" "multi_out.txt" "valgrind"
+run_multi_test "infile.txt" "cat" "uniq" "wc -l" "multi_out.txt"
+run_check_fds_test "infile.txt" "cat" "uniq" "wc -l" "multi_out.txt"
+run_multi_test "infile.txt" "cat" "uniq" "wc -l" "multi_out.txt" "valgrind"
 
 echo ""
 echo "🚀 [Phase 3] Testing empty infile..."
 echo ""
 touch empty_infile.txt
 run_test "empty_infile.txt" "cat" "wc -l" "empty_out.txt"
-check_fds "empty_infile.txt" "cat" "wc -l" "empty_out.txt"
+run_check_fds_test "empty_infile.txt" "cat" "wc -l" "empty_out.txt"
 run_test "empty_infile.txt" "cat" "wc -l" "empty_out.txt" "valgrind"
 
 echo ""
 echo "🚀 [Phase 4] Testing here_doc..."
 echo ""
 run_here_doc_test "END" "cat" "wc -l" "outfile_hd.txt"
-# check_fds "here_doc" "END" "cat" "wc -l" "outfile_hd.txt"
+# run_check_fds_test "here_doc" "END" "cat" "wc -l" "outfile_hd.txt"
 run_here_doc_test "END" "cat" "wc -l" "outfile_hd.txt" "valgrind"
 
 echo ""
 echo "🚀 [Phase 5] Testing nonexistent command..."
 echo ""
 run_badcmd_test "infile_bad.txt" "blahblah_123" "wc -l" "out_bad.txt"
-check_fds "infile_bad.txt" "blahblah_123" "wc -l" "out_bad.txt"
+run_check_fds_test "infile_bad.txt" "blahblah_123" "wc -l" "out_bad.txt"
 run_badcmd_test "infile_bad.txt" "blahblah_123" "wc -l" "out_bad.txt" "valgrind"
 
 echo ""
