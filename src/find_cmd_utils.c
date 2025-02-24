@@ -6,13 +6,24 @@
 /*   By: tsargsya <tsargsya@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/22 13:47:37 by tsargsya          #+#    #+#             */
-/*   Updated: 2025/02/24 22:29:34 by tsargsya         ###   ########.fr       */
+/*   Updated: 2025/02/24 23:22:29 by tsargsya         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "pipex.h"
 
-char	*get_from_env(char **envp, char *key)
+static char	*get_from_env(char **envp, char *key);
+static char	*build_command_path(char *dir, char *cmd);
+static char	*search_in_paths(char **paths, char *cmd);
+
+/**
+ * @brief Retrieve the value associated with 
+ * a specified key from the environment variables.
+ * @envp: An array of strings representing the environment variables.
+ * @key: The name of the environment variable to search for.
+ * @return Value associated with the key
+ */
+static char	*get_from_env(char **envp, char *key)
 {
 	int	i;
 	int	key_len;
@@ -28,7 +39,13 @@ char	*get_from_env(char **envp, char *key)
 	return (NULL);
 }
 
-char	*build_command_path(char *dir, char *cmd)
+/**
+ * @brief Constructs a full command path string.
+ * @param dir Directory in which the command is located.
+ * @param cmd Command name.
+ * @return A newly allocated string containing the full command path.
+ */
+static char	*build_command_path(char *dir, char *cmd)
 {
 	char	*full_path;
 	size_t	path_len;
@@ -43,7 +60,13 @@ char	*build_command_path(char *dir, char *cmd)
 	return (full_path);
 }
 
-char	*search_in_paths(char **paths, char *cmd)
+/**
+ * @brief Searches for the command in the specified directories.
+ * @param paths An array of strings representing the directories to search in.
+ * @param cmd Command name.
+ * @return A newly allocated string containing the full command path.
+ */
+static char	*search_in_paths(char **paths, char *cmd)
 {
 	char	*full_path;
 	int		i;
@@ -69,6 +92,12 @@ char	*search_in_paths(char **paths, char *cmd)
 	return (NULL);
 }
 
+/**
+ * @brief Searches for the command in the specified directories.
+ * @param cmd Command name.
+ * @param envp An array of strings representing the environment variables.
+ * @return A newly allocated string containing the full command path.
+ */
 char	*find_command(char *cmd, char **envp)
 {
 	char	*path_env;
