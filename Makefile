@@ -5,6 +5,14 @@
 NAME        = pipex
 
 # -------------------------------
+#   Compiler and Flags
+# -------------------------------
+CC          = cc
+CFLAGS      = -Wall -Wextra -Werror -Iincludes -I$(LIBFT_DIR)
+LDFLAGS     = -Wl,--allow-multiple-definition
+LFLAGS      = -L$(LIBFT_DIR) -lft
+
+# -------------------------------
 #   Directories
 # -------------------------------
 SRC_DIR     = src
@@ -16,35 +24,21 @@ LIBFT_DIR   = libft
 LIBFT       = $(LIBFT_DIR)/libft.a
 
 # -------------------------------
-#   Source Files for Mandatory Part
+#   All Source Files (Mandatory + Bonus)
 # -------------------------------
 SRCS        = $(SRC_DIR)/pipex.c \
               $(SRC_DIR)/pipex_utils.c \
               $(SRC_DIR)/execute_utils.c \
               $(SRC_DIR)/find_cmd_utils.c
 
-# -------------------------------
-#   Bonus Source Files (Additional)
-# -------------------------------
 BONUS_SRCS  = $(SRC_DIR)/here_doc_bonus.c
 
-# -------------------------------
-#   All Source Files (Mandatory + Bonus)
-# -------------------------------
 ALL_SRCS    = $(SRCS) $(BONUS_SRCS)
 
 # -------------------------------
-#   Object Files for pipex (All)
+#   Object Files (Mandatory + Bonus)
 # -------------------------------
 OBJS        = $(ALL_SRCS:.c=.o)
-
-# -------------------------------
-#   Compiler and Flags
-# -------------------------------
-CC          = cc
-CFLAGS      = -Wall -Wextra -Werror -Iincludes -I$(LIBFT_DIR)
-LDFLAGS     = -Wl,--allow-multiple-definition
-LFLAGS      = -L$(LIBFT_DIR) -lft
 
 # **************************************************************************** #
 #                                 Build Rules                                  #
