@@ -6,13 +6,22 @@
 /*   By: tsargsya <tsargsya@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/22 13:47:28 by tsargsya          #+#    #+#             */
-/*   Updated: 2025/02/24 22:31:35 by tsargsya         ###   ########.fr       */
+/*   Updated: 2025/02/24 22:59:47 by tsargsya         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "pipex.h"
 
-void	setup_redirections(t_pipex *pipex, int cmd_index)
+static void	setup_redirections(t_pipex *pipex, int cmd_index);
+static void	execute_command(char *cmd, t_pipex *pipex, int cmd_index,
+				char **envp);
+
+/**
+ * @brief Set up redirections for the command at the given index.
+ * @param pipex The pipex struct.
+ * @param cmd_index The index of the command.
+ */
+static void	setup_redirections(t_pipex *pipex, int cmd_index)
 {
 	if (cmd_index == 0)
 	{
@@ -31,22 +40,15 @@ void	setup_redirections(t_pipex *pipex, int cmd_index)
 	}
 }
 
-void	free_array(char **array)
-{
-	int	i;
-
-	i = 0;
-	if (!array)
-		return ;
-	while (array[i])
-	{
-		free(array[i]);
-		i++;
-	}
-	free(array);
-}
-
-void	execute_command(char *cmd, t_pipex *pipex, int cmd_index, char **envp)
+/**
+ * @brief Execute the command at the given index.
+ * @param cmd The command to execute.
+ * @param pipex The pipex struct.
+ * @param cmd_index The index of the command.
+ * @param envp The environment variables.
+ */
+static void	execute_command(char *cmd, t_pipex *pipex, int cmd_index,
+		char **envp)
 {
 	char	**args;
 	char	*cmd_path;
@@ -75,6 +77,31 @@ void	execute_command(char *cmd, t_pipex *pipex, int cmd_index, char **envp)
 	exit(EXIT_FAILURE);
 }
 
+/**
+ * @brief Free the given array.
+ * @param array The array to free.
+ */
+void	free_array(char **array)
+{
+	int	i;
+
+	i = 0;
+	if (!array)
+		return ;
+	while (array[i])
+	{
+		free(array[i]);
+		i++;
+	}
+	free(array);
+}
+
+/**
+ * @brief Execute the pipeline.
+ * @param pipex The pipex struct.
+ * @param argv The arguments.
+ * @param envp The environment variables.
+ */
 void	execute_pipeline(t_pipex *pipex, char **argv, char **envp)
 {
 	int		i;
