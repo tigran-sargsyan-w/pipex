@@ -6,12 +6,18 @@
 /*   By: tsargsya <tsargsya@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/22 13:47:24 by tsargsya          #+#    #+#             */
-/*   Updated: 2025/02/24 18:26:10 by tsargsya         ###   ########.fr       */
+/*   Updated: 2025/02/24 23:36:27 by tsargsya         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "pipex.h"
 
+/**
+ * @brief Initialize the pipex structure
+ * @param pipex The pipex structure
+ * @param argc The number of arguments
+ * @param argv The arguments
+ */
 void	init_pipex(t_pipex *pipex, int argc, char **argv)
 {
 	int	i;
@@ -35,6 +41,11 @@ void	init_pipex(t_pipex *pipex, int argc, char **argv)
 	}
 }
 
+/**
+ * @brief Close the pipes
+ * @param pipex The pipex structure
+ * @param cmd_index The command index to skip
+ */
 void	close_pipes(t_pipex *pipex, int cmd_index)
 {
 	int	i;
@@ -50,6 +61,10 @@ void	close_pipes(t_pipex *pipex, int cmd_index)
 	}
 }
 
+/**
+ * @brief Exit the program with an error message
+ * @param msg The error message
+ */
 void	error_exit(char *msg)
 {
 	perror(msg);
