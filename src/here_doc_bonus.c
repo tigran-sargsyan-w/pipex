@@ -6,18 +6,26 @@
 /*   By: tsargsya <tsargsya@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/24 22:38:25 by tsargsya          #+#    #+#             */
-/*   Updated: 2025/02/24 22:38:28 by tsargsya         ###   ########.fr       */
+/*   Updated: 2025/02/24 23:31:49 by tsargsya         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "pipex.h"
 
-void	handle_here_doc_input(char *filename, char *limiter)
+static void	handle_here_doc_input(char *filename, char *limiter);
+static void	prepare_here_doc(char *temp_file, int *argc, char **argv);
+
+/**
+ * @brief Handles the input for the here_doc file
+ * @param temp_file The name of the here_doc file
+ * @param limiter The limiter string
+ */
+static void	handle_here_doc_input(char *temp_file, char *limiter)
 {
 	int		fd;
 	char	*line;
 
-	fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+	fd = open(temp_file, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 	if (fd == -1)
 		error_exit("Error creating here_doc file");
 	while (1)
@@ -35,7 +43,13 @@ void	handle_here_doc_input(char *filename, char *limiter)
 	close(fd);
 }
 
-void	prepare_here_doc(char *temp_file, int *argc, char **argv)
+/**
+ * @brief Prepares the here_doc file and the arguments for the pipeline
+ * @param temp_file The name of the here_doc file
+ * @param argc The number of arguments
+ * @param argv The arguments
+ */
+static void	prepare_here_doc(char *temp_file, int *argc, char **argv)
 {
 	int	temp_fd;
 	int	i;
@@ -55,6 +69,14 @@ void	prepare_here_doc(char *temp_file, int *argc, char **argv)
 	}
 }
 
+/**
+ * @brief Executes the here_doc pipeline
+ * @param pipex The pipex structure
+ * @param argc The number of arguments
+ * @param argv The arguments
+ * @param envp The environment variables
+ * @return 0 on success, 1 on error
+ */
 int	pipex_here_doc(t_pipex *pipex, int argc, char **argv, char **envp)
 {
 	char	*temp_file;
