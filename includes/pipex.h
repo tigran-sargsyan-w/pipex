@@ -6,7 +6,7 @@
 /*   By: tsargsya <tsargsya@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/22 13:46:58 by tsargsya          #+#    #+#             */
-/*   Updated: 2025/02/22 17:54:32 by tsargsya         ###   ########.fr       */
+/*   Updated: 2025/02/24 22:03:18 by tsargsya         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,7 +36,6 @@ typedef struct s_pipex
 	int		outfile;
 }			t_pipex;
 
-// main functions
 void		init_pipex(t_pipex *pipex, int argc, char **argv);
 void		close_pipes(t_pipex *pipex, int cmd_index);
 void		execute_pipeline(t_pipex *pipex, char **argv, char **envp);
