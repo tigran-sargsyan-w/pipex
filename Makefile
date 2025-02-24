@@ -1,40 +1,79 @@
-NAME = pipex
+# **************************************************************************** #
+#                                  Makefile                                    #
+# **************************************************************************** #
 
-# Пути к файлам
-LIBFT_DIR = libft
-LIBFT = $(LIBFT_DIR)/libft.a
+NAME        = pipex
 
-SRCS = src/pipex.c \
-	src/pipex_utils.c \
-	src/execute_utils.c \
-	src/find_cmd_utils.c \
-	src/here_doc_bonus.c
-OBJS = $(SRCS:.c=.o)
+# -------------------------------
+#   Directories
+# -------------------------------
+SRC_DIR     = src
+LIBFT_DIR   = libft
 
-CC = cc
-CFLAGS = -Wall -Wextra -Werror -Iincludes -I$(LIBFT_DIR)
-LDFLAGS = -Wl,--allow-multiple-definition
+# -------------------------------
+#   Library Dependency
+# -------------------------------
+LIBFT       = $(LIBFT_DIR)/libft.a
 
-# Флаги линковки (добавляем libft)
-LFLAGS = -L$(LIBFT_DIR) -lft
+# -------------------------------
+#   Source Files for Mandatory Part
+# -------------------------------
+SRCS        = $(SRC_DIR)/pipex.c \
+              $(SRC_DIR)/pipex_utils.c \
+              $(SRC_DIR)/execute_utils.c \
+              $(SRC_DIR)/find_cmd_utils.c
+
+# -------------------------------
+#   Bonus Source Files (Additional)
+# -------------------------------
+BONUS_SRCS  = $(SRC_DIR)/here_doc_bonus.c
+
+# -------------------------------
+#   All Source Files (Mandatory + Bonus)
+# -------------------------------
+ALL_SRCS    = $(SRCS) $(BONUS_SRCS)
+
+# -------------------------------
+#   Object Files for pipex (All)
+# -------------------------------
+OBJS        = $(ALL_SRCS:.c=.o)
+
+# -------------------------------
+#   Compiler and Flags
+# -------------------------------
+CC          = cc
+CFLAGS      = -Wall -Wextra -Werror -Iincludes -I$(LIBFT_DIR)
+LDFLAGS     = -Wl,--allow-multiple-definition
+LFLAGS      = -L$(LIBFT_DIR) -lft
+
+# **************************************************************************** #
+#                                 Build Rules                                  #
+# **************************************************************************** #
 
 all: $(LIBFT) $(NAME)
+	@echo "🚀 Executable $(NAME) created successfully!"
 
 $(LIBFT):
-	@make -C $(LIBFT_DIR)
+	@$(MAKE) -s -C $(LIBFT_DIR)
 
 $(NAME): $(OBJS)
-	$(CC) $(CFLAGS) $(OBJS) $(LFLAGS) -o $(NAME) $(LDFLAGS)
+	@$(CC) $(CFLAGS) $(OBJS) $(LFLAGS) -o $(NAME) $(LDFLAGS)
+
+bonus: all
 
 %.o: %.c
 	@$(CC) $(CFLAGS) -c $< -o $@
 
 clean:
-	@make clean -C $(LIBFT_DIR)
-	rm -f $(OBJS)
+	@$(MAKE) -s clean -C $(LIBFT_DIR)
+	@rm -f $(OBJS)
+	@echo "🗑️ $(NAME) object files removed."
 
 fclean: clean
-	@make fclean -C $(LIBFT_DIR)
-	rm -f $(NAME)
+	@$(MAKE) -s fclean -C $(LIBFT_DIR)
+	@rm -f $(NAME)
+	@echo "😒 $(NAME) removed."
 
 re: fclean all
+
+.PHONY: all bonus clean fclean re
