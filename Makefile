@@ -5,13 +5,10 @@ LIBFT_DIR = libft
 LIBFT = $(LIBFT_DIR)/libft.a
 
 SRCS = src/pipex.c \
-	src/init_pipex.c \
-	src/execute_pipeline.c \
-	src/execute_command.c \
-	src/close_pipes.c \
-	src/errors.c \
-	src/find_command.c \
-	src/pipex_here_doc.c
+	src/pipex_utils.c \
+	src/execute_utils.c \
+	src/find_cmd_utils.c \
+	src/here_doc_bonus.c
 OBJS = $(SRCS:.c=.o)
 
 CC = cc
