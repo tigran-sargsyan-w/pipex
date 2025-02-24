@@ -6,12 +6,18 @@
 /*   By: tsargsya <tsargsya@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/02/22 13:47:45 by tsargsya          #+#    #+#             */
-/*   Updated: 2025/02/22 19:34:46 by tsargsya         ###   ########.fr       */
+/*   Updated: 2025/02/24 23:50:26 by tsargsya         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "pipex.h"
 
+/**
+ * @brief Entry point of the program
+ * @param argc The number of arguments
+ * @param argv The arguments
+ * @param envp The environment variables
+ */
 int	main(int argc, char **argv, char **envp)
 {
 	t_pipex	pipex;
