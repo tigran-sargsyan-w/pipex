@@ -20,6 +20,23 @@ TEST_DIR="pipex_test_dir"
 mkdir -p "$TEST_DIR"
 cd "$TEST_DIR"
 
+check_valgrind_leaks() {
+    local log_file="$1"
+
+    local still def ind pos
+    still=$(grep "still reachable:"   "$log_file" | sed -E 's/.* ([0-9]+) bytes in.*/\1/')
+    def=$(grep "definitely lost:"     "$log_file" | sed -E 's/.* ([0-9]+) bytes in.*/\1/')
+    ind=$(grep "indirectly lost:"     "$log_file" | sed -E 's/.* ([0-9]+) bytes in.*/\1/')
+    pos=$(grep "possibly lost:"       "$log_file" | sed -E 's/.* ([0-9]+) bytes in.*/\1/')
+
+    still=${still:-0}
+    def=${def:-0}
+    ind=${ind:-0}
+    pos=${pos:-0}
+
+    echo "$still $def $ind $pos"
+}
+
 # Function to run basic tests (Valgrind - optional)
 run_test() {
     local infile="$1"
@@ -214,53 +231,71 @@ run_badcmd_test() {
     local outfile="$4"
     local use_valgrind="$5"
 
-    # 🛠 Generate default infile if it doesn't exist
+    # 🛠 Если infile не существует — создаём
     if [ ! -f "$infile" ]; then
         printf "Some input data\n" > "$infile"
     fi
 
-    # 📝 Prepare the expected result (Shell)
+    # 📝 Готовим ожидаемый вывод через Shell
     rm -f expected_output.txt
     ( < "$infile" $badcmd | $cmd2 ) > expected_output.txt 2> bad_error.txt
 
     rm -f "$outfile"
 
-    # 📌 Form the command for Pipex: with Valgrind or without
+    # 📌 Если нужно Valgrind, составляем команду
     local exec_cmd="$PIPEX_BIN"
-    [ "$use_valgrind" == "valgrind" ] && exec_cmd="valgrind --leak-check=full --show-leak-kinds=all --errors-for-leak-kinds=all --error-exitcode=42 $PIPEX_BIN"
-
-    # 🚀 Run pipex with or without Valgrind
-    $exec_cmd "$infile" "$badcmd" "$cmd2" "$outfile" 2>/dev/null
-    local status=$?
-
-    # 📌 Check if `outfile` was created
-    if [ ! -f "$outfile" ]; then
-        echo "✅ OK (badcmd): outfile NOT created for <$infile $badcmd | $cmd2>"
-        return
+    if [ "$use_valgrind" = "valgrind" ]; then
+        exec_cmd="valgrind --leak-check=full --show-leak-kinds=all \
+                  --errors-for-leak-kinds=all --error-exitcode=42 \
+                  $PIPEX_BIN"
     fi
 
-    # 📌 Check `Valgrind` or `diff`
-    if [ "$use_valgrind" == "valgrind" ]; then
-        if [ "$status" -eq 42 ]; then
-            echo "❌ FAIL (Valgrind): <$infile $badcmd | $cmd2>"
-            errors=$((errors + 1))
-        else
-            echo "✅ OK (Valgrind): <$infile $badcmd | $cmd2>"
-        fi
+    # 🚀 Запускаем pipex (под valgrind или нет), stderr => valgrind_log.txt
+    $exec_cmd "$infile" "$badcmd" "$cmd2" "$outfile" 2> valgrind_log.txt
+    local cmd_status=$?
+
+    # Если мы в режиме Valgrind, парсим лог и получаем 4 числа:
+    local still=0 def=0 ind=0 pos=0
+    if [ "$use_valgrind" = "valgrind" ]; then
+        read still def ind pos < <(check_valgrind_leaks valgrind_log.txt)
+    fi
+
+    # 📌 Проверяем, создался ли outfile
+    if [ ! -f "$outfile" ]; then
+        echo "✅ OK (badcmd): outfile NOT created for <$infile $badcmd | $cmd2>"
     else
-        # 🚀 Normalize `\n` to make `diff` work correctly
+        # Сравниваем с ожидаемым выводом
         sed -i -e '$a\' expected_output.txt
         sed -i -e '$a\' "$outfile"
-
         if diff expected_output.txt "$outfile" >/dev/null 2>&1; then
             echo "✅ OK (badcmd): matched shell behavior for <$infile $badcmd | $cmd2>"
         else
             echo "❌ FAIL (badcmd): differs from shell for <$infile $badcmd | $cmd2>"
-            echo "--- Expected Output (hexdump) ---"
-            hexdump -C expected_output.txt
-            echo "--- Pipex Output (hexdump) ---"
-            hexdump -C "$outfile"
             errors=$((errors + 1))
+        fi
+    fi
+
+    # Если запущено под Valgrind — проверяем код возврата + утечки
+    if [ "$use_valgrind" = "valgrind" ]; then
+        # Проверка кода возврата (42 при ошибках Valgrind)
+        if [ "$cmd_status" -eq 42 ]; then
+            echo "❌ FAIL (Valgrind exit code): <$infile $badcmd | $cmd2>"
+            errors=$((errors + 1))
+        else
+            echo "✅ OK (Valgrind exit code): <$infile $badcmd | $cmd2>"
+        fi
+
+        # Проверка утечек (если хоть один вид > 0 — считаем ошибкой)
+        if (( def > 0 || ind > 0 || pos > 0 || still > 0 )); then
+            echo "❌ FAIL (Valgrind memory check): <$infile $badcmd | $cmd2>"
+            echo "Valgrind summary:"
+            echo "  definitely lost: $def bytes"
+            echo "  indirectly lost: $ind bytes"
+            echo "  possibly lost:   $pos bytes"
+            echo "  still reachable: $still bytes"
+            errors=$((errors + 1))
+        else
+            echo "✅ OK (Valgrind memory check): no memory issues"
         fi
     fi
 }
