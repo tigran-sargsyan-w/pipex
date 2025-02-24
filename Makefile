@@ -52,6 +52,7 @@ $(LIBFT):
 
 $(NAME): $(OBJS)
 	@$(CC) $(CFLAGS) $(OBJS) $(LFLAGS) -o $(NAME) $(LDFLAGS)
+	@echo "✅ $(NAME) object files compiled."
 
 bonus: all
 
