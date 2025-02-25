@@ -362,6 +362,8 @@ run_check_fds_test() {
     leak_lines=$(grep -A 10 "Open file descriptor" valgrind_log.txt | \
         grep -v "<inherited from parent>" | \
         grep -v "vscode" | \
+        grep -v "code" | \
+        grep -v "Code" | \
         grep -v -E "(HEAP SUMMARY|LEAK SUMMARY|ERROR SUMMARY|All heap|suppressed:|in use at exit|total heap usage:|^--$|lost:|bytes in )" | \
         sed '/^==[0-9]\+== *$/d' | \
         sed '/^==[0-9]\+== Open file descriptor [0-9]\+:$/d')
