@@ -1,5 +1,8 @@
 # pipex
 
+✅ **Completed**: Mandatory + Bonus  
+🏅 **Score**: 125/100
+
 ![42 Logo](https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTXfAZMOWHDQ3DKE63A9jWhIqQaKcKqUIXvzg&s)
 
 **pipex** is a project from 42 School that replicates the behavior of Unix pipes and redirections. The project simulates the execution of a command line such as:
